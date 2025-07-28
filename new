@@ -1,0 +1,1048 @@
+local startTime = tick()
+local exe_name, exe_version = identifyexecutor()
+local function home999() end
+local function home888() end
+
+if exe_name ~= "Wave Windows" then
+    hookfunction(home888, home999)
+    if isfunctionhooked(home888) == false then
+        game.Players.LocalPlayer:Destroy()
+        return LPH_CRASH()
+    end
+end 
+
+local function check_env(env)
+    for _, func in env do
+        if type(func) ~= "function" then
+            continue
+        end
+        local functionhook = isfunctionhooked(func)
+        if functionhook then
+            game.Players.LocalPlayer:Destroy()
+            return LPH_CRASH()
+        end
+    end
+end
+
+check_env(getgenv())
+check_env(getrenv())
+
+local Lua_Fetch_Connections = getconnections
+local Lua_Fetch_Upvalues = getupvalues
+local Lua_Hook = hookfunction
+local Lua_Hook_Method = hookmetamethod
+local Lua_Unhook = restorefunction
+local Lua_Replace_Function = replaceclosure
+local Lua_Set_Upvalue = setupvalue
+local Lua_Clone_Function = clonefunction
+
+local Game_RunService = game:GetService("RunService")
+local Game_LogService = game:GetService("LogService")
+local Game_LogService_MessageOut = Game_LogService.MessageOut
+
+local String_Lower = string.lower
+local Table_Find = table.find
+local Get_Type = type
+
+local Current_Connections = {}
+local Hooked_Connections = {}
+
+local function Test_Table(Table, Return_Type)
+    for TABLE_INDEX, TABLE_VALUE in Table do
+        if type(TABLE_VALUE) == String_Lower(Return_Type) then
+            return TABLE_VALUE, TABLE_INDEX
+        end
+        continue
+    end
+end
+
+local function Print_Table(Table)
+    table.foreach(Table, print)
+end
+
+if getgenv().DEBUG then
+    print("[auth.injected.live] Waiting...")
+end
+
+local good_check = 0
+
+function auth_heart()
+    return true, true
+end
+
+function Lua_Common_Intercept(old, ...)
+    print(...)
+    return old(...)
+end
+
+function XVNP_L(CONNECTION)
+    local s, e = pcall(function()
+        local OPENAC_TABLE = Lua_Fetch_Upvalues(CONNECTION.Function)[9]
+        local OPENAC_FUNCTION = OPENAC_TABLE[1]
+        local IGNORED_INDEX = {3, 12, 1, 11, 15, 8, 20, 18, 22}
+
+        Lua_Set_Upvalue(OPENAC_FUNCTION, 14, function(...)
+            return function(...)
+                local args = {...}
+                if type(args[1]) == "table" and args[1][1] then
+                    pcall(function()
+                        if type(args[1][1]) == "userdata" then
+                            args[1][1]:Disconnect()
+                            args[1][2]:Disconnect()
+                            args[1][3]:Disconnect()
+                            args[1][4]:Disconnect()
+                        end
+                    end)
+                end
+            end
+        end)
+
+        Lua_Set_Upvalue(OPENAC_FUNCTION, 1, function(...)
+            task.wait(200)
+        end)
+
+        hookfunction(OPENAC_FUNCTION, function(...)
+            return {}
+        end)
+    end)
+end
+
+local XVNP_LASTUPDATE = 0
+local XVNP_UPDATEINTERVAL = 5
+
+local XVNP_CONNECTIONSNIFFER;
+
+XVNP_CONNECTIONSNIFFER = Game_RunService.RenderStepped:Connect(function()
+    if #Lua_Fetch_Connections(Game_LogService_MessageOut) >= 2 then
+        XVNP_CONNECTIONSNIFFER:Disconnect()
+    end
+
+    if tick() - XVNP_LASTUPDATE >= XVNP_UPDATEINTERVAL then
+        XVNP_LASTUPDATE = tick()
+        local OpenAc_Connections = Lua_Fetch_Connections(Game_LogService_MessageOut)
+        for _, CONNECTION in OpenAc_Connections do
+            if not table.find(Current_Connections, CONNECTION) then
+                table.insert(Current_Connections, CONNECTION)
+                table.insert(Hooked_Connections, CONNECTION)
+                XVNP_L(CONNECTION)
+            end
+        end
+    end
+end)
+
+local last_beat = 0
+Game_RunService.RenderStepped:Connect(function()
+    if last_beat + 1 < tick() then
+        last_beat = tick() + 1
+        local what, are = auth_heart()
+        if not are or not what then
+            if good_check <= 0 then
+                game.Players.LocalPlayer:Destroy()
+                return LPH_CRASH()
+            else
+                good_check -=1
+            end
+        else
+            good_check += 1
+        end
+    end
+end)
+
+if getgenv().DEBUG then
+    print("[auth.injected.live] Started Emulation Thread")
+end
+
+print("AC Bypassed!")
+
+wait(0.1)
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
+local TweenService = game:GetService("TweenService")
+local ruinlolol = Players.LocalPlayer
+local Mouse = ruinlolol:GetMouse()
+
+local Script = {
+    Table = getgenv().ruin,
+    Functions = {},
+    Connections = {
+        GunConnections = {}
+    },
+    Utility = {
+        Gun = {}
+    },
+    ActiveFeature = nil,
+    FOVCircle = nil,
+    Drawings = {},
+    LockedTarget = nil, -- For Target mode
+}
+
+for key, object in pairs(getgc(true)) do
+    if type(object) == "table" then
+        setreadonly(object, false)
+        local indexInstance = rawget(object, "indexInstance")
+        if type(indexInstance) == "table" and indexInstance[1] == "kick" then
+            setreadonly(indexInstance, false)
+            rawset(object, "Table", {"kick", function() coroutine.yield() end})
+            break
+        end
+    end
+end
+
+local logService = game:GetService("LogService")
+local replicatedStorage = game:GetService("ReplicatedStorage")
+
+for _, connection in ipairs(getconnections(logService.MessageOut)) do
+    connection:Disable()
+end
+
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+
+if Script.Table.Start.Misc.CameraFOV.Active then
+    Camera.FieldOfView = Script.Table.Start.Misc.CameraFOV.Value
+end
+
+-- Initialize FOV Circle
+local function createFOVCircle()
+    if Script.FOVCircle then
+        Script.FOVCircle:Remove()
+        Script.FOVCircle = nil
+    end
+    if Script.Table.Start.Silent.Mode ~= "FOV" then
+        return
+    end
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = CoreGui
+    screenGui.ResetOnSpawn = false
+    screenGui.IgnoreGuiInset = true
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    local circle = Instance.new("Frame")
+    circle.Name = "FOVCircle"
+    circle.Parent = screenGui
+    circle.BackgroundTransparency = 1
+    circle.Size = UDim2.new(0, Script.Table.Start.Silent.FOV.Radius * 2, 0, Script.Table.Start.Silent.FOV.Radius * 2)
+    circle.Position = UDim2.new(0.5, 0, 0.5, 0)
+    circle.AnchorPoint = Vector2.new(0.5, 0.5)
+    circle.BorderSizePixel = 0
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 2
+    stroke.Color = Color3.new(1, 1, 1)
+    stroke.Parent = circle
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(1, 0)
+    uiCorner.Parent = circle
+    Script.FOVCircle = circle
+end
+
+-- Update FOV Circle visibility
+local function updateFOVCircle()
+    if Script.FOVCircle then
+        Script.FOVCircle.Visible = Script.Table.Start.Silent.FOV.Visible and Script.Table.Start.Silent.Active and Script.Table.Start.Silent.Mode == "FOV"
+    end
+end
+
+-- Modified GetClosest function for FOV mode and target selection
+Script.Functions.GetClosest = function()
+    if not Script.Table.Start.Silent.Active then
+        return nil
+    end
+    local Target
+    local Closest = math.huge
+    local mousePos = UserInputService:GetMouseLocation()
+    for _, Player in pairs(Players:GetPlayers()) do
+        if Player ~= ruinlolol and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") and Player.Character:FindFirstChild("Humanoid") and Player.Character.Humanoid.Health > 0 then
+            local PartPos, OnScreen = Camera:WorldToViewportPoint(Player.Character.HumanoidRootPart.Position)
+            local Magnitude = (Vector2.new(PartPos.X, PartPos.Y) - mousePos).Magnitude
+            if (Script.Table.Start.Silent.Mode == "FOV" and Magnitude <= Script.Table.Start.Silent.FOV.Radius and Magnitude < Closest and OnScreen) or
+               (Script.Table.Start.Silent.Mode == "Target" and Magnitude < Closest and OnScreen) then
+                Target = Player
+                Closest = Magnitude
+            end
+        end
+    end
+    if getgenv().DEBUG then
+        print("GetClosest: Target =", Target and Target.DisplayName or "None")
+    end
+    return Target
+end
+
+local function Args()
+    if string.find(identifyexecutor(), 'Solara') then
+        local i = game.PlaceId
+        local Argument
+        if i == 2788229376 or i == 7213786345 or i == 16033173781 then
+            Argument = "UpdateMousePosI2"
+        elseif i == 9825515356 then
+            Argument = "MousePosUpdate"
+        else
+            Argument = "UpdateMousePos"
+        end
+        return Argument
+    end
+end
+
+Script.Table.MainEvent = nil
+Script.Table.Argument = Args()
+
+task.spawn(function()
+    if string.find(identifyexecutor(), "Solara") then
+        for _, remote in pairs(ReplicatedStorage:GetDescendants()) do
+            if remote.Name == "MainEvent" then
+                Script.Table.MainEvent = remote
+                break
+            end
+        end
+    end
+end)
+
+local function getVelocity(Player)
+    if string.find(identifyexecutor(), 'Solara') then
+        local targetParts = getgenv().ruin.Start.Silent.TargetParts
+        local Old = Player.Character:FindFirstChild(targetParts)
+        if Old then
+            wait(0.1)
+            local Current = Player.Character.HumanoidRootPart.Position
+            return (Current - Old.Position) / 0.1
+        end
+        return Vector3.zero
+    end
+end
+
+local v = nil
+RunService.Heartbeat:Connect(function(deltaTime)
+    if Script.Table.Start.Silent.Active and (Script.Target or Script.LockedTarget) then
+        local target = Script.Target or Script.LockedTarget
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            v = getVelocity(target)
+        else
+            v = nil
+        end
+    else
+        v = nil
+    end
+    if getgenv().DEBUG then
+        print("Velocity:", v)
+    end
+end)
+
+local SpreadMod = getgenv().ruin
+local old; old = hookfunction(math.random, function(...)
+    local args = {...}
+    if checkcaller() then
+        return old(...)
+    end
+    if (#args == 0) or 
+       (args[1] == -0.05 and args[2] == 0.05) or 
+       (args[1] == -0.05) then
+        if SpreadMod.Start.Misc.BulletSpread.Enabled then
+            local spread = SpreadMod.Start.Misc.BulletSpread.Amount
+            return old(...) * (spread / 100)
+        else
+            return old(...)
+        end
+    end
+    return old(...)
+end)
+
+local originalHook
+local mt = getrawmetatable(game)
+setreadonly(mt, false)
+originalHook = mt.__index
+
+mt.__index = function(self, index)
+    if not checkcaller() and self == Mouse then
+        if index == "Hit" or (index == "Target" and game.PlaceId == 2788229376) then
+            local silentSettings = getgenv().ruin.Start.Silent
+            if Script.ActiveFeature == "Silent" and silentSettings.Active then
+                local target = (silentSettings.Mode == "Target" and Script.LockedTarget) or Script.Target
+                if target and target.Character then
+                    local targetPart = target.Character:FindFirstChild(silentSettings.TargetParts)
+                    if targetPart and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 then
+                        local prediction = v and (v * silentSettings.Prediction) or Vector3.zero
+                        local offsets = getgenv().ruin.Start.SilentOffsets
+                        local position = targetPart.CFrame
+                        if target.Character.Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+                            position = position + Vector3.new(0, offsets.Jump, 0)
+                        else
+                            position = position + Vector3.new(0, offsets.Fall, 0)
+                        end
+                        local predictedPosition = position + prediction
+                        if getgenv().DEBUG then
+                            print("Silent Aim: Target =", target.DisplayName, "Position =", predictedPosition.Position)
+                        end
+                        return predictedPosition
+                    end
+                end
+            end
+        end
+    end
+    return originalHook(self, index)
+end
+
+Script.Connections.InputBegan = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    if gameProcessedEvent then
+        return
+    end
+    local silentSettings = Script.Table.Start.Silent
+    if silentSettings.Active and input.KeyCode == Enum.KeyCode[silentSettings.Keybind] then
+        if silentSettings.Mode == "Target" then
+            if Script.LockedTarget then
+                if silentSettings.Notification then
+                    Script.Functions.sendNotification("Silent Aim Unlocked")
+                end
+                Script.LockedTarget = nil
+                Script.ActiveFeature = nil
+            else
+                local target = Script.Functions.GetClosest()
+                if target then
+                    Script.LockedTarget = target
+                    Script.ActiveFeature = "Silent"
+                    if silentSettings.Notification then
+                        Script.Functions.sendNotification("Silent Aim Locked onto " .. target.DisplayName)
+                    end
+                end
+            end
+        elseif silentSettings.Mode == "FOV" then
+            Script.Target = Script.Functions.GetClosest()
+            Script.ActiveFeature = "Silent"
+            if Script.Target then
+                -- No notifications for FOV mode
+            else
+                Script.Target = nil
+                Script.ActiveFeature = nil
+            end
+        end
+    end
+end)
+
+Script.Functions.isAirborne = function(player)
+    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+    return humanoid and humanoid:GetState() == Enum.HumanoidStateType.Freefall
+end
+
+-- Adapted from glock's rewrittenAimbot with ultra-smooth behavior
+Script.Functions.rewrittenAimbot = function()
+    if not Script.LockedTarget or not Script.LockedTarget.Character then return end
+    local bodyEffects = Script.LockedTarget.Character:FindFirstChild("BodyEffects")
+    if not bodyEffects then return end
+    local KOd = bodyEffects:FindFirstChild("K.O") and bodyEffects["K.O"].Value
+    local humanoid = Script.LockedTarget.Character:FindFirstChild("Humanoid")
+    if humanoid and (humanoid.Health <= 1 or KOd) then
+        if Script.Table.Start.Silent.Notification then
+            Script.Functions.sendNotification("Silent Aim Unlocked")
+        end
+        Script.LockedTarget = nil
+        Script.ActiveFeature = nil
+        return
+    end
+    local partName = tostring(Script.Table.Start.Silent.TargetParts)
+    local Parts = Script.LockedTarget.Character:FindFirstChild(partName)
+    if not Parts then return end
+    local Smooth = Script.Table.Start.Silent.Smoothness
+    local future = Script.Table.Start.Silent.Prediction
+    if Script.Table.Start.Misc.Resolver.Active and Parts then
+        local lastPosition = Parts.Position
+        task.wait()
+        local currentPosition = Parts.Position
+        local velocity = (currentPosition - lastPosition) / RunService.RenderStepped:Wait()
+        Parts.AssemblyLinearVelocity = velocity
+        Parts.Velocity = velocity
+    end
+    local futurepos = Parts.Position + Parts.Velocity * future
+    local offsets = Script.Table.Start.SilentOffsets
+    if humanoid then
+        local humanoidState = humanoid:GetState()
+        if humanoidState == Enum.HumanoidStateType.Freefall then
+            futurepos = futurepos + Vector3.new(0, offsets.Jump, 0)
+        else
+            futurepos = futurepos + Vector3.new(0, offsets.Fall, 0)
+        end
+    end
+    local TargetCamera = CFrame.new(Camera.CFrame.Position, futurepos)
+    if Smooth == 0 then
+        Camera.CFrame = TargetCamera -- Instant snap when Smoothness is 0
+    else
+        Camera.CFrame = Camera.CFrame:Lerp(TargetCamera, 1 - Smooth) -- Ultra-smooth when Smoothness is close to 1
+    end
+end
+
+RunService.RenderStepped:Connect(function(deltaTime)
+    if Script.Table.Start.Silent.Active then
+        if Script.Table.Start.Silent.Mode == "FOV" then
+            if Script.FOVCircle then
+                local mousePos = UserInputService:GetMouseLocation()
+                Script.FOVCircle.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
+                if getgenv().DEBUG then
+                    print("FOV Circle: MousePos =", mousePos)
+                end
+            end
+            Script.Target = Script.Functions.GetClosest()
+            if Script.Target then
+                Script.ActiveFeature = "Silent"
+            else
+                Script.ActiveFeature = nil
+            end
+        elseif Script.Table.Start.Silent.Mode == "Target" then
+            if Script.LockedTarget and Script.LockedTarget.Character then
+                local humanoid = Script.LockedTarget.Character:FindFirstChild("Humanoid")
+                if humanoid and (Script.Functions.isDead(Script.LockedTarget) or humanoid.Health <= 0) then
+                    if Script.Table.Start.Silent.Notification then
+                        Script.Functions.sendNotification("Silent Aim Unlocked")
+                    end
+                    Script.LockedTarget = nil
+                    Script.ActiveFeature = nil
+                else
+                    local silentSettings = Script.Table.Start.Silent
+                    local targetPart = Script.LockedTarget.Character:FindFirstChild(silentSettings.TargetParts)
+                    if targetPart and humanoid and humanoid.Health > 0 then
+                        local success, result = pcall(function()
+                            Script.Functions.rewrittenAimbot()
+                            return true
+                        end)
+                        if not success then
+                            warn("Camera smoothing error: " .. tostring(result))
+                            if getgenv().DEBUG then
+                                print("Error details: deltaTime =", deltaTime, "targetPart =", targetPart)
+                            end
+                        end
+                    end
+                end
+            else
+                Script.LockedTarget = nil
+                Script.ActiveFeature = nil
+            end
+        end
+    else
+        Script.Target = nil
+        Script.LockedTarget = nil
+        Script.ActiveFeature = nil
+    end
+    updateFOVCircle()
+end)
+
+Script.Functions.HandleCharacter = function(Character)
+    for _, Conn in ipairs({ "CharacterChildAdded", "ChildRemovingCharacter" }) do
+        if Script.Connections[Conn] then
+            Script.Connections[Conn]:Disconnect()
+        end
+    end
+
+    Script.Connections.CharacterChildAdded = Character.ChildAdded:Connect(function(Tool)
+        if Tool:IsA("Tool") then
+            for _, Conn in ipairs(getconnections(Tool:GetPropertyChangedSignal("Grip"))) do
+                Conn:Disable()
+            end
+        end
+    end)
+
+    Script.Connections.ChildRemovingCharacter = Character.ChildRemoved:Connect(function()
+        Script.Utility.Gun.Tool = nil
+    end)
+end
+
+local function SetupCharacter(Char)
+    Script.Functions.HandleCharacter(Char)
+end
+
+local CurrentCharacter = ruinlolol.Character or ruinlolol.CharacterAdded:Wait()
+SetupCharacter(CurrentCharacter)
+
+ruinlolol.CharacterAdded:Connect(SetupCharacter)
+
+ruinlolol.CharacterRemoving:Connect(function()
+    for _, Conn in ipairs({ "CharacterChildAdded", "ChildRemovingCharacter" }) do
+        if Script.Connections[Conn] then
+            Script.Connections[Conn]:Disconnect()
+        end
+    end
+end)
+
+local settings = getgenv().ruin.Start
+local isActive = false
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+Script.Functions.handleMacro = function()
+    if not settings.Misc.Macro.Active then
+        isActive = false
+        return
+    end
+    local acceleration = settings.Misc.Macro.Acceleration
+    if type(acceleration) ~= "number" then
+        warn("Invalid Acceleration value")
+        return
+    end
+    local speed = acceleration / 100000
+    if settings.Misc.Macro.Variety == "Third" then
+        repeat
+            task.wait(speed)
+            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.I, false, game)
+            task.wait(speed)
+            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.O, false, game)
+            task.wait(speed)
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.I, false, game)
+            task.wait(speed)
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.O, false, game)
+        until not isActive or not settings.Misc.Macro.Active
+    elseif settings.Misc.Macro.Variety == "First" then
+        repeat
+            VirtualInputManager:SendMouseWheelEvent("0", "0", true, game)
+            task.wait(speed)
+            VirtualInputManager:SendMouseWheelEvent("0", "0", false, game)
+            task.wait(speed)
+            VirtualInputManager:SendMouseWheelEvent("0", "0", true, game)
+            task.wait(speed)
+            VirtualInputManager:SendMouseWheelEvent("0", "0", false, game)
+            task.wait(speed)
+        until not isActive or not settings.Misc.Macro.Active
+    end
+end
+
+Script.Functions.onInputBegan = function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode[settings.Misc.Macro.Keybind] and settings.Misc.Macro.Active then
+        isActive = not isActive
+        if isActive then
+            Script.Functions.handleMacro()
+        end
+    end
+end
+
+UserInputService.InputBegan:Connect(Script.Functions.onInputBegan)
+
+local StarterGui = game:GetService("StarterGui")
+
+Script.Functions.isDead = function(player)
+    local character = player.Character
+    if not character or not character:FindFirstChild("BodyEffects") then
+        return false
+    end
+    local bodyEffects = character.BodyEffects
+    local ko = bodyEffects:FindFirstChild("K.O") or bodyEffects:FindFirstChild("KO")
+    return ko and ko.Value or false
+end
+
+Script.Functions.getTarget = function(instance)
+    if not instance then
+        return false
+    end
+    for _, player in next, Players:GetPlayers() do
+        if player.Character and (instance == player.Character or instance:IsDescendantOf(player.Character)) then
+            if not Script.Functions.isDead(player) then
+                return player
+            end
+        end
+    end
+    return false
+end
+
+Script.Functions.isToolBlacklisted = function(tool)
+    for _, toolName in ipairs(Script.Table.Start.TriggerBot.Blacklisted) do
+        if tool.Name == toolName then
+            return true
+        end
+    end
+    return false
+end
+
+Script.Functions.sendNotification = function(message)
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = CoreGui
+    screenGui.ResetOnSpawn = false
+    screenGui.IgnoreGuiInset = true
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    local frame = Instance.new("Frame")
+    frame.Parent = screenGui
+    frame.Size = UDim2.new(0, 300, 0, 50)
+    frame.Position = UDim2.new(0.5, -150, 1, -160)
+    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    frame.BackgroundTransparency = 0.3
+    frame.BorderSizePixel = 0
+
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0, 8)
+    uiCorner.Parent = frame
+
+    local uiStroke = Instance.new("UIStroke")
+    uiStroke.Thickness = 1
+    uiStroke.Color = Color3.new(1, 0, 0)
+    uiStroke.Transparency = 0.5
+    uiStroke.Parent = frame
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Parent = frame
+    titleLabel.Size = UDim2.new(1, -10, 0, 20)
+    titleLabel.Position = UDim2.new(0, 5, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = '<font color="rgb(255,255,255)">ruin</font><font color="rgb(255,0,0)">.cc</font>'
+    titleLabel.RichText = true
+    titleLabel.Font = Enum.Font.SourceSansBold
+    titleLabel.TextSize = 18
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local messageLabel = Instance.new("TextLabel")
+    messageLabel.Parent = frame
+    messageLabel.Size = UDim2.new(1, -10, 0, 20)
+    messageLabel.Position = UDim2.new(0, 5, 0, 25)
+    messageLabel.BackgroundTransparency = 1
+    messageLabel.Text = message
+    messageLabel.Font = Enum.Font.SourceSans
+    messageLabel.TextSize = 16
+    messageLabel.TextColor3 = Color3.new(1, 1, 1)
+    messageLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    frame.BackgroundTransparency = 1
+    titleLabel.TextTransparency = 1
+    messageLabel.TextTransparency = 1
+    uiStroke.Transparency = 1
+
+    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
+    local fadeIn = {
+        BackgroundTransparency = 0.3,
+        TextTransparency = 0,
+        Transparency = 0.5
+    }
+    local fadeOut = {
+        BackgroundTransparency = 1,
+        TextTransparency = 1,
+        Transparency = 1
+    }
+
+    TweenService:Create(frame, tweenInfo, {BackgroundTransparency = 0.3}):Play()
+    TweenService:Create(titleLabel, tweenInfo, {TextTransparency = 0}):Play()
+    TweenService:Create(messageLabel, tweenInfo, {TextTransparency = 0}):Play()
+    TweenService:Create(uiStroke, tweenInfo, {Transparency = 0.5}):Play()
+
+    task.delay(2, function()
+        TweenService:Create(frame, tweenInfo, {BackgroundTransparency = 1}):Play()
+        TweenService:Create(titleLabel, tweenInfo, {TextTransparency = 1}):Play()
+        TweenService:Create(messageLabel, tweenInfo, {TextTransparency = 1}):Play()
+        TweenService:Create(uiStroke, tweenInfo, {Transparency = 1}):Play()
+        task.delay(0.5, function()
+            screenGui:Destroy()
+        end)
+    end)
+end
+
+local RUINBRUH = false
+
+Script.Functions.onKeyPress = function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode[Script.Table.Start.TriggerBot.Keybind] and Script.Table.Start.TriggerBot.Active then
+        RUINBRUH = not RUINBRUH
+        if Script.Table.Start.TriggerBot.Notification then
+            Script.Functions.sendNotification("TriggerBot " .. (RUINBRUH and "Enabled" or "Disabled"))
+        end
+    end
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode[Script.Table.Start.Misc.AntiLock.Keybind] and Script.Table.Start.Misc.AntiLock.Active then
+        getgenv().Sky = not getgenv().Sky
+        if Script.Table.Start.Misc.AntiLock.Notification then
+            Script.Functions.sendNotification("AntiLock " .. (getgenv().Sky and "Enabled" or "Disabled"))
+        end
+    end
+end
+
+UserInputService.InputBegan:Connect(Script.Functions.onKeyPress)
+
+Script.Functions.triggerBot = function()
+    local con
+    con = RunService.Heartbeat:Connect(function()
+        if RUINBRUH and Script.Table.Start.TriggerBot.Active then
+            local target = Mouse.Target
+            if target and Script.Functions.getTarget(target) then
+                if ruinlolol.Character then
+                    local tool = ruinlolol.Character:FindFirstChildWhichIsA('Tool')
+                    if tool and not Script.Functions.isToolBlacklisted(tool) then
+                        task.wait(Script.Table.Start.TriggerBot.Delay)
+                        tool:Activate()
+                    end
+                end
+            end
+        end
+    end)
+    Script.Connections.triggerBot = con
+end
+
+Script.Functions.triggerBot()
+
+getgenv().Sky = false
+Script.Connections.AntiLock = RunService.Heartbeat:Connect(function()
+    if getgenv().Sky and Script.Table.Start.Misc.AntiLock.Active then
+        local character = ruinlolol.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local vel = character.HumanoidRootPart.Velocity
+            local sideShake = math.sin(tick() * 2048) * 2048
+            character.HumanoidRootPart.Velocity = Vector3.new(sideShake, 8192, 0)
+            RunService.RenderStepped:Wait()
+            character.HumanoidRootPart.Velocity = vel
+        end
+    end
+end)
+
+getgenv().disable = function()
+    getgenv().disable = nil
+    warn("Disconnecting:", Script.Connections.triggerBot)
+    Script.Connections.triggerBot:Disconnect()
+    if Script.Connections.AntiLock then
+        warn("Disconnecting:", Script.Connections.AntiLock)
+        Script.Connections.AntiLock:Disconnect()
+    end
+end
+
+local click = false
+local rotate = 0
+local render = 0
+
+Script.Functions.onKeyPressSpin = function(Input, GameProcessedEvent)
+    if Input.KeyCode == Enum.KeyCode[Script.Table.Start.Misc.Spin.Keybind] and not GameProcessedEvent and Script.Table.Start.Misc.Spin.Active then
+        click = not click
+    end
+end
+
+Script.Functions.getDirectionVector = function(direction)
+    if direction == "North" then
+        return Vector3.new(0, 1, 0)
+    elseif direction == "South" then
+        return Vector3.new(0, -1, 0)
+    elseif direction == "East" then
+        return Vector3.new(1, 0, 0)
+    elseif direction == "West" then
+        return Vector3.new(-1, 0, 0)
+    else
+        return Vector3.new(0, 1, 0)
+    end
+end
+
+Script.Functions.rotateCamera = function()
+    if click and Script.Table.Start.Misc.Spin.Active then
+        local currentTime = tick()
+        local timeDelta = math.min(currentTime - render, 0.01)
+        render = currentTime
+        local rotationSpeed = Script.Table.Start.Misc.Spin.Acceleration * timeDelta
+        local smoothRotation = rotationSpeed * Script.Table.Start.Misc.Spin.Smoothness
+        local directionVector = Script.Functions.getDirectionVector(Script.Table.Start.Misc.Spin.Directions)
+        local rotation = CFrame.fromAxisAngle(directionVector, math.rad(smoothRotation))
+        Camera.CFrame = Camera.CFrame * rotation
+        rotate = rotate + rotationSpeed
+        if rotate >= Script.Table.Start.Misc.Spin.Degrees then
+            click = false
+            rotate = 0
+        end
+    end
+end
+
+local function recalculateVelocity()
+    if not Script.Table.Start.Misc.Resolver.Active then return end
+    local character = ruinlolol.Character
+    if not character then return end
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    local closestPlayer, closestDistance = nil, math.huge
+    for _, otherPlayer in pairs(Players:GetPlayers()) do
+        if otherPlayer ~= ruinlolol and otherPlayer.Character then
+            local otherCharacter = otherPlayer.Character
+            local otherRootPart = otherCharacter:FindFirstChild("HumanoidRootPart")
+            if otherRootPart then
+                local distance = (humanoidRootPart.Position - otherRootPart.Position).Magnitude
+                if distance < closestDistance then
+                    closestPlayer = otherPlayer
+                    closestDistance = distance
+                end
+            end
+        end
+    end
+    if closestPlayer and closestPlayer.Character then
+        local targetRootPart = closestPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if targetRootPart then
+            local newVelocity = Vector3.new(0, 0, 0)
+            targetRootPart.Velocity = newVelocity
+        end
+    end
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode[Script.Table.Start.Misc.Resolver.Keybind] then
+        local resolver = Script.Table.Start.Misc.Resolver
+        resolver.Active = not resolver.Active
+        Script.Functions.sendNotification(resolver.Active and "Resolver ON" or "Resolver OFF")
+        if resolver.Active then
+            local connection
+            connection = RunService.Heartbeat:Connect(function()
+                if not resolver.Active then
+                    connection:Disconnect()
+                    return
+                end
+                recalculateVelocity()
+            end)
+        end
+    end
+end)
+
+Script.Functions.applyAnimations = function(character)
+    wait(0.1)
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    if Script.Table.Start.Misc.ZombieAnim.Active then
+        local animateScript = character:WaitForChild("Animate")
+        animateScript.Disabled = true
+        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+            track:Stop()
+        end
+        animateScript.idle.Animation1.AnimationId = "rbxassetid://10921344533"
+        animateScript.idle.Animation2.AnimationId = "rbxassetid://10921345304"
+        animateScript.run.RunAnim.AnimationId = "rbxassetid://616163682"
+        animateScript.walk.WalkAnim.AnimationId = "rbxassetid://10921355261"
+        animateScript.jump.JumpAnim.AnimationId = "rbxassetid://10921242013"
+        animateScript.fall.FallAnim.AnimationId = "rbxassetid://10921241244"
+        animateScript.Disabled = false
+    end
+    if Script.Table.Start.Misc.MacroAnim.Active then
+        local animator = humanoid:FindFirstChildOfClass("Animator")
+        if not animator then
+            animator = Instance.new("Animator")
+            animator.Parent = humanoid
+        end
+        local animationId = Script.Table.Start.Misc.MacroAnim.AnimationId
+        local animation = Instance.new("Animation")
+        animation.AnimationId = animationId
+        local animationTrack = animator:LoadAnimation(animation)
+        local isPlaying = false
+        local function toggleAnimation()
+            if not Script.Table.Start.Misc.MacroAnim.Active then return end
+            if isPlaying then
+                animationTrack:Stop()
+                isPlaying = false
+            else
+                animationTrack:Play()
+                isPlaying = true
+            end
+        end
+        local function onMove()
+            if isPlaying and humanoid.MoveDirection.Magnitude > 0 then
+                animationTrack:Stop()
+                isPlaying = false
+            end
+        end
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if not gameProcessed and input.KeyCode == Enum.KeyCode[Script.Table.Start.Misc.MacroAnim.Keybind] then
+                toggleAnimation()
+            end
+        end)
+        humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(onMove)
+    end
+end
+
+ruinlolol.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid")
+    Script.Functions.applyAnimations(character)
+end)
+
+if ruinlolol.Character then
+    Script.Functions.applyAnimations(ruinlolol.Character)
+end
+
+RunService.RenderStepped:Connect(function()
+    if Script.Table.Start.Misc.Movement.Active then
+        if ruinlolol.Character and ruinlolol.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = ruinlolol.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = Script.Table.Start.Misc.Movement.WalkSpeed
+                humanoid.JumpPower = Script.Table.Start.Misc.Movement.JumpPower
+            end
+        end
+    end
+    if Script.Table.Start.Misc.Spin.Active then
+        Script.Functions.rotateCamera()
+    end
+    if Script.Table.Start.Misc.CameraFOV.Active then
+        Camera.FieldOfView = Script.Table.Start.Misc.CameraFOV.Value
+    else
+        Camera.FieldOfView = 70 -- Default Roblox FOV
+    end
+end)
+
+-- Initialize
+createFOVCircle()
+
+workspace.FallenPartsDestroyHeight = 0/0
+
+local endTime = tick()
+local duration = endTime - startTime
+print("ruin.cc loaded in " .. string.format("%.2f", duration) .. " seconds!")
+
+Script.Functions.Play = function()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+    local frame = Instance.new("Frame")
+    frame.Name = "IntroFrame"
+    frame.Parent = screenGui
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundTransparency = 1
+    local imageLabel = Instance.new("ImageLabel")
+    imageLabel.Name = "IntroImage"
+    imageLabel.Parent = frame
+    imageLabel.Size = UDim2.new(0.01, 0, 0.01, 0)
+    imageLabel.Position = UDim2.new(0.5, -0.1, 0.5, -0.1)
+    imageLabel.Image = "rbxassetid://7733964719"
+    imageLabel.BackgroundTransparency = 1
+    imageLabel.ImageTransparency = 1
+    imageLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+    local sound = Instance.new("Sound")
+    sound.Name = "IntroSound"
+    sound.Parent = frame
+    sound.SoundId = "rbxassetid://137572180349082"
+    sound:Play()
+    local ScreenGui = Instance.new("ScreenGui")
+    local Frame = Instance.new("Frame")
+    local TextLabel = Instance.new("TextLabel")
+    local Blur = Instance.new("BlurEffect")
+
+    ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    ScreenGui.ResetOnSpawn = false
+
+    Frame.Parent = ScreenGui
+    Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Frame.Size = UDim2.new(1, 0, 1, 0)
+    Frame.BackgroundTransparency = 1
+
+    Blur.Parent = game.Lighting
+    Blur.Size = 0
+
+    TextLabel.Parent = Frame
+    TextLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+    TextLabel.Size = UDim2.new(0, 400, 0, 100)
+    TextLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+    TextLabel.Font = Enum.Font.SourceSansBold
+    TextLabel.Text = '<font color="rgb(255,255,255)">ruin</font><font color="rgb(255,0,0)">.cc</font>'
+    TextLabel.RichText = true
+    TextLabel.TextSize = 60
+    TextLabel.TextTransparency = 1
+
+    local TweenService = game:GetService("TweenService")
+    local fadeIn = TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.In)
+    local fadeOut = TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+
+    local function animateIntro()
+        TweenService:Create(Frame, fadeIn, {BackgroundTransparency = 1}):Play()
+        TweenService:Create(Blur, fadeIn, {Size = 4}):Play()
+        TweenService:Create(TextLabel, fadeIn, {TextTransparency = 0}):Play()
+        wait(3)
+        TweenService:Create(Frame, fadeOut, {BackgroundTransparency = 1}):Play()
+        TweenService:Create(Blur, fadeOut, {Size = 0}):Play()
+        TweenService:Create(TextLabel, fadeOut, {TextTransparency = 1}):Play()
+        wait(2)
+        Blur:Destroy()
+        ScreenGui:Destroy()
+    end
+
+    animateIntro()
+end
+
+Script.Functions.Play() 
