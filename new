@@ -174,7 +174,7 @@ local Script = {
     ActiveFeature = nil,
     FOVCircle = nil,
     Drawings = {},
-    LockedTarget = nil, -- For Target mode
+    LockedTarget = nil, 
 }
 
 for key, object in pairs(getgc(true)) do
@@ -205,7 +205,6 @@ if Script.Table.Start.Misc.CameraFOV.Active then
     Camera.FieldOfView = Script.Table.Start.Misc.CameraFOV.Value
 end
 
--- Initialize FOV Circle
 local function createFOVCircle()
     if Script.FOVCircle then
         Script.FOVCircle:Remove()
@@ -237,14 +236,12 @@ local function createFOVCircle()
     Script.FOVCircle = circle
 end
 
--- Update FOV Circle visibility
 local function updateFOVCircle()
     if Script.FOVCircle then
         Script.FOVCircle.Visible = Script.Table.Start.Silent.FOV.Visible and Script.Table.Start.Silent.Active and Script.Table.Start.Silent.Mode == "FOV"
     end
 end
 
--- Modified GetClosest function for FOV mode and target selection
 Script.Functions.GetClosest = function()
     if not Script.Table.Start.Silent.Active then
         return nil
@@ -409,7 +406,6 @@ Script.Connections.InputBegan = UserInputService.InputBegan:Connect(function(inp
             Script.Target = Script.Functions.GetClosest()
             Script.ActiveFeature = "Silent"
             if Script.Target then
-                -- No notifications for FOV mode
             else
                 Script.Target = nil
                 Script.ActiveFeature = nil
@@ -423,7 +419,6 @@ Script.Functions.isAirborne = function(player)
     return humanoid and humanoid:GetState() == Enum.HumanoidStateType.Freefall
 end
 
--- Adapted from glock's rewrittenAimbot with ultra-smooth behavior
 Script.Functions.rewrittenAimbot = function()
     if not Script.LockedTarget or not Script.LockedTarget.Character then return end
     local bodyEffects = Script.LockedTarget.Character:FindFirstChild("BodyEffects")
@@ -463,9 +458,9 @@ Script.Functions.rewrittenAimbot = function()
     end
     local TargetCamera = CFrame.new(Camera.CFrame.Position, futurepos)
     if Smooth == 0 then
-        Camera.CFrame = TargetCamera -- Instant snap when Smoothness is 0
+        Camera.CFrame = TargetCamera 
     else
-        Camera.CFrame = Camera.CFrame:Lerp(TargetCamera, 1 - Smooth) -- Ultra-smooth when Smoothness is close to 1
+        Camera.CFrame = Camera.CFrame:Lerp(TargetCamera, 1 - Smooth) 
     end
 end
 
@@ -962,11 +957,10 @@ RunService.RenderStepped:Connect(function()
     if Script.Table.Start.Misc.CameraFOV.Active then
         Camera.FieldOfView = Script.Table.Start.Misc.CameraFOV.Value
     else
-        Camera.FieldOfView = 70 -- Default Roblox FOV
+        Camera.FieldOfView = 70
     end
 end)
 
--- Initialize
 createFOVCircle()
 
 workspace.FallenPartsDestroyHeight = 0/0
